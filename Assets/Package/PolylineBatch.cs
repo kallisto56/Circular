@@ -1,6 +1,7 @@
 namespace Circular
 {
 	using UnityEngine;
+	using UnityEngine.Rendering;
 	using UnityEditor;
 
 
@@ -10,6 +11,11 @@ namespace Circular
 	/// </summary>
 	public class PolylineBatch
 	{
+		public Occlusion occlusion = Occlusion.dimmed;
+
+		public Color normalColor;
+		public Color occludedColor;
+
 		public Vector3[] vertices;
 		public float lineWidth = 2.0f;
 		public int index = 0;
@@ -69,18 +75,26 @@ namespace Circular
 		/// <param name="countSegmentsPerArc">Resolution per arc</param>
 		public void AddBiarc (Biarc biarc, Transform transform, int countSegmentsPerArc)
 		{
-			float distanceOnBiarc = 0.0f;
+			// What we are doing here, is iteration over enum.
+			// Every time we ask for point, we advance to next option in enum.
+			// For arcs, we divide arc length into steps and proceed to next enum-option
+			// when distance on biarc reaches arc's right extent.
 			DistanceOnBiarc position = DistanceOnBiarc.origin;
+			float distanceOnBiarc = 0.0f;
 
-			while (true)
+			while (position != DistanceOnBiarc.stop)
 			{
+				// Get point
 				Vector3 point = biarc.GetPoint(distanceOnBiarc);
+
+				// Transform it
 				point = transform.TransformPoint(point);
 
+				// Add to batch
 				this.AddPoint(point);
-				this.GetAlpha(biarc, ref position, ref distanceOnBiarc, countSegmentsPerArc);
 
-				if (position == DistanceOnBiarc.stop)break;
+				// Get next position
+				this.GetAlpha(biarc, ref position, ref distanceOnBiarc, countSegmentsPerArc);
 			}
 		}
 
@@ -105,15 +119,19 @@ namespace Circular
 			}
 			else if (position == DistanceOnBiarc.leftArc)
 			{
+				// There are two cases, the arc is either valid or not
 				if (biarc.leftArc.isValid == false)
 				{
 					distanceOnBiarc = biarc.leftArc.leftExtentLength + biarc.leftArc.arcLength;
 					position = DistanceOnBiarc.firstRightExtent;
 					return;
 				}
+
+				// Advance distanceOnBiarc until...
 				float delta = biarc.leftArc.arcLength / (float)(countSegmentsPerArc);
 				distanceOnBiarc += delta;
 
+				// ...distanceOnBiarc is greater than arc length
 				if (distanceOnBiarc > biarc.leftArc.leftExtentLength + biarc.leftArc.arcLength)
 				{
 					distanceOnBiarc = biarc.leftArc.leftExtentLength + biarc.leftArc.arcLength;
@@ -142,19 +160,25 @@ namespace Circular
 			}
 			else if (position == DistanceOnBiarc.rightArc)
 			{
+				// ...
+				float rightExtent = biarc.totalLength - biarc.rightArc.rightExtentLength;
+
+				// There are two cases, the arc is either valid or not
 				if (biarc.rightArc.isValid == false)
 				{
-					distanceOnBiarc = biarc.totalLength - biarc.rightArc.rightExtentLength;
+					distanceOnBiarc = rightExtent;
 					position = DistanceOnBiarc.secondRightExtent;
 					return;
 				}
 
+				// Advance distanceOnBiarc until...
 				float delta = biarc.rightArc.arcLength / (float)(countSegmentsPerArc);
 				distanceOnBiarc += delta;
-				float total = biarc.totalLength - biarc.rightArc.rightExtentLength;
-				if (distanceOnBiarc > total)
+
+				// ...distanceOnBiarc is greater than arc length
+				if (distanceOnBiarc > rightExtent)
 				{
-					distanceOnBiarc = total;
+					distanceOnBiarc = rightExtent;
 					position = DistanceOnBiarc.secondRightExtent;
 				}
 			}
@@ -177,7 +201,38 @@ namespace Circular
 		public void Render (bool clear = false)
 		{
 			if (this.index == 0) return;
-			Handles.DrawAAPolyLine(this.lineWidth, this.index, this.vertices);
+
+			if (this.occlusion == Occlusion.disabled)
+			{
+				// Rendering everything
+				Handles.color = this.normalColor;
+				Handles.DrawAAPolyLine(this.lineWidth, this.index, this.vertices);
+			}
+			else if (this.occlusion == Occlusion.visibleOnly)
+			{
+				// Rendering only what's visible
+				Handles.zTest = CompareFunction.LessEqual;
+				Handles.color = this.normalColor;
+				Handles.DrawAAPolyLine(this.lineWidth, this.index, this.vertices);
+
+				// Reset
+				Handles.zTest = CompareFunction.Disabled;
+			}
+			else if (this.occlusion == Occlusion.dimmed)
+			{
+				// First: Rendering only what's visible
+				Handles.zTest = CompareFunction.LessEqual;
+				Handles.color = this.normalColor;
+				Handles.DrawAAPolyLine(this.lineWidth, this.index, this.vertices);
+				
+				// Second: Rendering occluded as dimmed
+				Handles.zTest = CompareFunction.Greater;
+				Handles.color = this.occludedColor;
+				Handles.DrawAAPolyLine(this.lineWidth, this.index, this.vertices);
+
+				// Reset
+				Handles.zTest = CompareFunction.Disabled;
+			}
 
 			if (clear == true)
 			{

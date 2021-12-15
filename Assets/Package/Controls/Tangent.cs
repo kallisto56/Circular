@@ -26,7 +26,10 @@
 			this.node = node;
 		}
 
-		/// <returns><see cref="Vector3" /> global position</returns>
+		/// <summary>
+		/// Returns position of tangent
+		/// </summary>
+		/// <returns>Position of tangent</returns>
 		public Vector3 GetPosition ()
 		{
 			return this.node.position + this.localPosition;
@@ -37,7 +40,7 @@
 		/// </summary>
 		/// <param name="position"><see cref="Vector3" /> global position</param>
 		/// <param name="behaviour">Behaviour, that will be applied to cotangent</param>
-		public void SetPosition (Vector3 position, CotangentBehaviour behaviour = CotangentBehaviour.keepMagnitudeAdjustDirection)
+		public void SetPosition (Vector3 position, CotangentBehaviour behaviour)
 		{
 			this.localPosition = position - this.node.position;
 

@@ -37,6 +37,14 @@
 
 
 
+		/// <summary>
+		/// Interpolates properties of two samples
+		/// </summary>
+		/// <param name="left">Start sample</param>
+		/// <param name="right">End sample</param>
+		/// <param name="color">Interpolated color</param>
+		/// <param name="tilt">Interpolated tilt</param>
+		/// <param name="alpha">Value between 0.0f and 1.0f</param>
 		public static void Interpolate (Sample left, Sample right, out Color color, out float tilt, float alpha)
 		{
 			color = new Color(
@@ -48,6 +56,13 @@
 			tilt = EaseInOutQuad(left.tilt, right.tilt, alpha);
 		}
 		
+		/// <summary>
+		/// Quadratic interpolation between two values
+		/// </summary>
+		/// <param name="start">Start value</param>
+		/// <param name="end">End value</param>
+		/// <param name="value">Value between 0.0f and 1.0f</param>
+		/// <returns></returns>
 		public static float EaseInOutQuad(float start, float end, float value)
 		{
 			// source: https://gist.github.com/cjddmut/d789b9eb78216998e95c
@@ -58,6 +73,11 @@
 			return -end * 0.5f * (value * (value - 2) - 1) + start;
 		}
 
+		/// <summary>
+		/// Computes distance on biarc and distance on path for target sample.
+		/// </summary>
+		/// <param name="biarcs">List of biarcs, on which method will operate on.</param>
+		/// <param name="sample">Target <see cref="Sample" /></param>
 		public static void ComputeDistance (List<Biarc> biarcs, Sample sample)
 		{
 			float distanceOnPath = 0.0f;

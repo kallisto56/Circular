@@ -1,0 +1,110 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 550d7276840f5db44b1c1e04768728dc, type: 3}
+  m_Name: EditorSettings
+  m_EditorClassIdentifier: 
+  rendering:
+    isFoldoutOpen: 0
+    occlusion: 2
+    pathColorForVertices: 0
+    pathColorForSamples: 1
+    pathLineWidth: 3
+    polylineBatchSize: 512
+  interaction:
+    isFoldoutOpen: 0
+    snapGridSize: 0.5
+    countSegmentsForScreenSpace: 32
+    colorOfEmphasizedPoint: {r: 0, g: 0, b: 0, a: 1}
+    focusBoundsForPathIncrease: 1.1
+    focusBoundsForControlIncrease: 5
+  pointOnBiarc:
+    isFoldoutOpen: 0
+    isVisible: 0
+    handleSize: 0.1
+    minimumDistance: 45
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+  pointOnPlane:
+    isFoldoutOpen: 0
+    isVisible: 0
+    handleSize: 0.08
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    normalLineColor: {r: 0, g: 0, b: 0, a: 0.75}
+    occludedLineColor: {r: 0, g: 0, b: 0, a: 0.35}
+  solidPath:
+    isFoldoutOpen: 0
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    countSegments: 32
+  gradientPath:
+    isFoldoutOpen: 0
+    occludedColorGain: 0.35
+    countSegments: 16
+  normals:
+    isFoldoutOpen: 1
+    isVisible: 1
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    countSegments: 10
+    onlyBiarcInFocus: 0
+    useSamples: 1
+    magnitude: 1
+  handleSizes:
+    isFoldoutOpen: 0
+    keepConstant: 1
+    controlInFocus: 1.2
+    selectedControl: 1.4
+  nodes:
+    isFoldoutOpen: 0
+    handleSize: 0.1
+    arrowHandleSize: 0.36
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    inFocusColor: {r: 1, g: 0, b: 0, a: 1}
+    selectedColor: {r: 1, g: 0, b: 0, a: 1}
+    leftArrowColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    rightArrowColor: {r: 1, g: 0, b: 0, a: 1}
+  tangents:
+    isFoldoutOpen: 0
+    handleSize: 0.08
+    arrowHandleSize: 0.36
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    inFocusColor: {r: 0, g: 1, b: 0, a: 1}
+    selectedColor: {r: 0, g: 1, b: 0, a: 1}
+    lineColor: {r: 0, g: 0, b: 0, a: 0.5}
+    occludedLineColor: {r: 0, g: 0, b: 0, a: 0.35}
+    oppositeTangentColor: {r: 0, g: 0, b: 0, a: 0.85}
+  midpoints:
+    isFoldoutOpen: 0
+    handleSize: 0.08
+    arrowHandleSize: 0.36
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    inFocusColor: {r: 0, g: 1, b: 1, a: 1}
+    selectedColor: {r: 0, g: 1, b: 1, a: 1}
+  samples:
+    isFoldoutOpen: 0
+    handleSize: 0.08
+    arrowHandleSize: 0.36
+    tiltHandleSize: 1
+    tiltSnappingInterval: 15
+    normalColor: {r: 0, g: 0, b: 0, a: 1}
+    occludedColor: {r: 0, g: 0, b: 0, a: 0.35}
+    inFocusColor: {r: 1, g: 1, b: 1, a: 1}
+    selectedColor: {r: 1, g: 1, b: 1, a: 1}
+    anchorSnappingMinimum: 0.25
+  inspector:
+    isFoldoutOpen: 0
+    delimiterWhiteTheme: {r: 0.7294118, g: 0.7294118, b: 0.7294118, a: 1}
+    delimiterDarkTheme: {r: 0.1882353, g: 0.1882353, b: 0.1882353, a: 1}

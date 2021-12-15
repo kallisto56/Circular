@@ -3,115 +3,69 @@
 	using System;
 	using System.Collections.Generic;
 	using UnityEngine;
-	using UnityEditor;
 
 
 
+	/// <summary>
+	/// Container for storing current state of PathEditor
+	/// </summary>
 	[Serializable]
 	public class EditorState
 	{
-		[NonSerialized] public bool isInitialized = false;
-
+		// Mode in which user currently operates
 		public EditorMode mode = EditorMode.vertices;
+
+		// Behaviour, that will be applied to cotangent of modified tangent
+		public CotangentBehaviour cotangentBehaviour = CotangentBehaviour.keepMagnitudeAdjustDirection;
+
+		// ...
+		public bool showTransformTool = false;
+		public float pathTotalLength;
+
+		// Initialization and invalidation
+		[NonSerialized] public bool isInitialized = false;
+		[NonSerialized] public bool requiresUpdate = true;
+		[NonSerialized] public bool requiresRepaint = true;
+
+		// Transform of PathComponent
 		public Transform transform;
 
+		// Collections, constructed from on Path
 		public List<Biarc> biarcs = new List<Biarc>();
 		public List<Sample> samples = new List<Sample>();
 		public List<Node> nodes = new List<Node>();
-		public float totalLength;
-
-		// Invalidation
-		public bool requiresUpdate = true;
-		public bool requiresRepaint = true;
 
 		// Foldouts
-		public bool uiShowEditorSettings = false;
-
-		public bool showTransformTool = false;
-		public bool showPointOnBiarc = false;
-		public bool showPointOnPlane = false;
-		public bool alwaysDrawColoredPath = false;
-		public bool alwaysDrawSamples = false;
-
-		// EditorMode.vertices
-		public int countSegmentsPerArcForOptimizedPath = 32;
-		// EditorMode.samples
-		public int countSegmentsPerUnitLengthForColoredPath = 4;
-		
-		public float pathLineWidth = 3.0f;
-		public float snapGridSize = 0.5f;
-
-		// Normals
-		public bool renderNormals = false;
-		public bool useSamplesForColoringNormals = false;
-		public float countSegmentsForNormalsPerUnitLength = 2;
-
-		// Tangent behaviour
-		public CotangentBehaviour cotangentBehaviour = CotangentBehaviour.keepMagnitudeAdjustDirection;
-		public Vector3 initialTangentDirection;
-		public bool initialTangentDirectionSet = false;
-
-		public int polylineBatchSize = 512;
-
-		public Ray mouseRay;
-		public Plane plane;
+		public bool inspectorShowGlobalSettings = false;
+		public bool inspectorShowLocalSettings = false;
 
 		// Current controls
 		public IControl controlInFocus;
 		public IControl selectedControl;
 
-		// Biarc in focus and it's properties
-		public bool hasPointOnBiarc;
-		public Biarc biarcInFocus;
-		public Vector3 pointOnBiarc;
-		public float distanceOnBiarc;
-		public float minimalCursorToPointOnBiarcDistance = 45.0f;
+		// For control in focus
+		public bool emphasizeControlInFocus = false;
 
-		public bool hasPointOnPlane;
-		public Vector3 pointOnPlane;
+		// Biarc in focus and its properties
+		public bool hasPointOnBiarc = false;
+		public Biarc biarcInFocus = null;
+		public Vector3 pointOnBiarc = Vector3.zero;
+		public float distanceOnBiarc = 0.0f;
+		public float distanceOnPath = 0.0f;
 
-		// Size of handles
-		public bool uiKeepConstantSizeOfHandles = true;
-		public float uiHandleSizeForNode = 0.08f;
-		public float uiHandleSizeForTangent = 0.08f;
-		public float uiHandleSizeForMidpoint = 0.08f;
-		public float uiHandleSizeForSample = 0.08f;
-		public float uiHandleSizeForPointOnBiarc = 0.1f;
+		// Point on plane
+		public bool hasPointOnPlane = false;
+		public Vector3 pointOnPlane = Vector3.zero;
 
-		// Colors for Node
-		public Color uiColorForNode = Color.black;
-		public Color uiColorForNodeInFocus = Color.red;
-		public Color uiColorForNodeSelected = Color.red;
-
-		// Colors for Tangent
-		public Color uiColorForTangent = Color.black;
-		public Color uiColorForTangentInFocus = Color.green;
-		public Color uiColorForTangentSelected = Color.green;
-		public Color uiColorForTangentLine = new Color(0.0f, 0.0f, 0.0f, 0.8f);
-
-		// Colors for Midpoint
-		public Color uiColorForMidpoint = Color.black;
-		public Color uiColorForMidpointInFocus = Color.cyan;
-		public Color uiColorForMidpointSelected = Color.cyan;
-
-		// Colors for Sample
-		public Color uiColorForSample = Color.black;
-		public Color uiColorForSampleInFocus = Color.white;
-		public Color uiColorForSampleSelected = Color.white;
-
-		// ...
-		public Color uiColorForPointOnBiarc = Color.black;
-		public Color uiColorForPath = Color.black;
-		public Color uiColorForNormals = Color.black;
-		public Color uiColorForPointOnPlane = Color.black;
-
-		// ...
-		public float uiHandleSizeForPointOnPlane = 0.08f;
-
-		// ...
+		// Used for rendering path in batches
 		public PolylineBatch polylineBatch = new PolylineBatch();
-		public Biarc temporaryBiarc = new Biarc();
 
+		// ...
+		public Ray mouseRay;
+		public Plane plane;
+
+		// ...
+		public bool isSnappingEnabled = false;
 
 
 		/// <summary>
@@ -228,6 +182,13 @@
 			this.ApplyChanges(path);
 		}
 
+		/// <summary>
+		/// Searches for biarc with specified identifier in provided list.
+		/// </summary>
+		/// <param name="biarcs">List of biarcs to search in</param>
+		/// <param name="identifier">Wanted identifier</param>
+		/// <param name="biarc">Biarc with wanted identifier</param>
+		/// <returns>Returns true, when biarc has been found, otherwise returns false.</returns>
 		public static bool GetBiarcByIdentifier (List<Biarc> biarcs, int identifier, out Biarc biarc)
 		{
 			for (int n = 0; n < biarcs.Count; n++)
@@ -243,11 +204,15 @@
 			return false;
 		}
 
+		/// <summary>
+		/// Applies changes in current instance of EditorState to a specified instance of Path.
+		/// </summary>
+		/// <param name="path">Target instance of <see cref="Path" /></param>
 		public void ApplyChanges (Path path)
 		{
 			path.biarcs.Clear();
 			path.samples.Clear();
-			path.totalLength = this.totalLength;
+			path.totalLength = this.pathTotalLength;
 
 			for (int n = 0; n < this.biarcs.Count; n++)
 			{
@@ -287,8 +252,6 @@
 				outputSample.tilt = inputSample.tilt;
 				outputSample.anchor = inputSample.anchor;
 
-				// Because EditorState is using transformed biarcs
-				// we are required to recalculate distanceOnBiarc.
 				outputSample.distanceOnBiarc = inputSample.distanceOnBiarc;
 				outputSample.distanceOnPath = inputSample.distanceOnPath;
 
@@ -296,24 +259,24 @@
 			}
 		}
 
-		public float GetHandleSize (Vector3 position, float handleSize)
-		{
-			return this.uiKeepConstantSizeOfHandles
-				? (HandleUtility.GetHandleSize(position) * handleSize)
-				: handleSize;
-		}
-
-
+		/// <summary>
+		/// Returns new instance of <see cref="EditorState" />.
+		/// </summary>
+		/// <returns>Instance of <see cref="EditorState" />.</returns>
 		public static EditorState CreateDefault ()
 		{
 			return new EditorState();
 		}
 
-
+		/// <summary>
+		/// Generates unique (in scope of current instance of EditorState) identifier for target biarc
+		/// </summary>
+		/// <param name="biarc">Target <see cref="Biarc" /></param>
 		public void GenerateIdentifierForBiarc (Biarc biarc)
 		{
 			biarc.identifier = -1;
 			int identifier = 0;
+
 			while (true)
 			{
 				if (this.ContainsBiarcIdentifier(identifier) == false)
@@ -326,6 +289,11 @@
 			}
 		}
 
+		/// <summary>
+		/// Returns true, if biarc with specified identifier is present in current instance of EditorState.
+		/// </summary>
+		/// <param name="identifier">Target identifier</param>
+		/// <returns>True, when identifier is present, otherwise false.</returns>
 		public bool ContainsBiarcIdentifier (int identifier)
 		{
 			for (int n = 0; n < this.biarcs.Count; n++)
@@ -339,8 +307,12 @@
 			return false;
 		}
 
-
-
+		/// <summary>
+		/// Returns interpolated color and tilt at specified distance on path.
+		/// </summary>
+		/// <param name="distanceOnPath">Target distance on path</param>
+		/// <param name="color">Interpolated color</param>
+		/// <param name="tilt">Interpolated tilt</param>
 		public void GetSampleAtDistance (float distanceOnPath, out Color color, out float tilt)
 		{
 			this.GetSamplePair(distanceOnPath, out Sample left, out Sample right);
@@ -367,6 +339,12 @@
 			}
 		}
 
+		/// <summary>
+		/// Returns pair of samples that are closest to specified distance on path.
+		/// </summary>
+		/// <param name="distanceOnPath">Target distance on path</param>
+		/// <param name="left">Sample before specified distance on path</param>
+		/// <param name="right">Sample after specified distance on path</param>
 		public void GetSamplePair (float distanceOnPath, out Sample left, out Sample right)
 		{
 			left = null;
@@ -393,6 +371,136 @@
 			}
 		}
 
+		/// <summary>
+		/// Returns <see cref="IControl" />, previous to specified control on the path.
+		/// </summary>
+		/// <param name="node">Owner of `currentControl`</param>
+		/// <param name="currentControl">Target control</param>
+		/// <returns><see cref="IControl" />, previous to specified control on the path.</returns>
+		public IControl GetPrevious (Node node, IControl currentControl)
+		{
+			int nodeIndex = this.nodes.IndexOf(node);
+
+			if (currentControl == node.rightMidpoint)
+			{
+				return node.rightTangent;
+			}
+			else if (currentControl == node.rightTangent)
+			{
+				return node;
+			}
+			else if (currentControl == node)
+			{
+				return (nodeIndex > 0) ? node.leftTangent : currentControl;
+			}
+			else if (currentControl == node.leftTangent)
+			{
+				return node.leftMidpoint;
+			}
+			else// if (currentControl == node.leftMidpoint)
+			{
+				return this.nodes[nodeIndex - 1].rightMidpoint;
+			}
+		}
+
+		/// <summary>
+		/// Returns <see cref="IControl" />, that stands after specified control on the path.
+		/// </summary>
+		/// <param name="node">Owner of `currentControl`</param>
+		/// <param name="currentControl">Target control</param>
+		/// <returns>Next <see cref="IControl" /> on path after specified control.</returns>
+		public IControl GetNext (Node node, IControl currentControl)
+		{
+			int nodeIndex = this.nodes.IndexOf(node);
+
+			if (currentControl == node.leftMidpoint)
+			{
+				return node.leftTangent;
+			}
+			else if (currentControl == node.leftTangent)
+			{
+				return node;
+			}
+			else if (currentControl == node)
+			{
+				return (nodeIndex + 1 < this.nodes.Count) ? node.rightTangent : currentControl;
+			}
+			else if (currentControl == node.rightTangent)
+			{
+				return node.rightMidpoint;
+			}
+			else// if (currentControl == node.rightMidpoint)
+			{
+				return this.nodes[nodeIndex + 1].leftMidpoint;
+			}
+
+		}
+
+		/// <summary>
+		/// Returns <see cref="Tangent" />, opposite to specified <see cref="Midpoint" />.
+		/// </summary>
+		/// <param name="midpoint">Target <see cref="Midpoint" /></param>
+		/// <returns><see cref="Tangent" />, opposite to specified <see cref="Midpoint" /></returns>
+		public Tangent GetOppositeTangent (Midpoint midpoint)
+		{
+			int nodeIndex = this.nodes.IndexOf(midpoint.node);
+			if (midpoint.node.leftMidpoint == midpoint)
+			{
+				return this.nodes[nodeIndex - 1].rightTangent;
+			}
+			else
+			{
+				return this.nodes[nodeIndex + 1].leftTangent;
+			}
+		}
+
+		/// <summary>
+		/// Returns <see cref="Tangent" />, related to specified <see cref="Midpoint" />
+		/// </summary>
+		/// <param name="midpoint">Target <see cref="Midpoint" /></param>
+		/// <returns><see cref="Tangent" />, related to specified <see cref="Midpoint" /></returns>
+		public Tangent GetTangent (Midpoint midpoint)
+		{
+			return midpoint.node.leftMidpoint == midpoint
+				? midpoint.node.leftTangent
+				: midpoint.node.rightTangent;
+		}
+
+		/// <summary>
+		/// Returns <see cref="Midpoint" />, opposite to specified <see cref="Midpoint" />
+		/// </summary>
+		/// <param name="midpoint">Target <see cref="Midpoint" /></param>
+		/// <returns><see cref="Midpoint" />, opposite to specified <see cref="Midpoint" /></returns>
+		public Midpoint GetOpposite (Midpoint midpoint)
+		{
+			if (midpoint.node.leftMidpoint == midpoint)
+			{
+				return this.GetPrevious(midpoint.node, midpoint) as Midpoint;
+			}
+			else
+			{
+				return this.GetNext(midpoint.node, midpoint) as Midpoint;
+			}
+		}
+
+		/// <summary>
+		/// Returns <see cref="Tangent" />, opposite to specified <see cref="Tangent" />
+		/// </summary>
+		/// <param name="tangent">Target <see cref="Tangent" /></param>
+		/// <returns><see cref="Tangent" />, opposite to specified <see cref="Tangent" /></returns>
+		public Tangent GetOpposite (Tangent tangent)
+		{
+			int nodeIndex = this.nodes.IndexOf(tangent.node);
+
+			if (tangent.node.leftTangent == tangent)
+			{
+				return this.nodes[nodeIndex - 1].rightTangent;
+			}
+			else
+			{
+				return this.nodes[nodeIndex + 1].leftTangent;
+			}
+		}
 
 
 	}

@@ -5,6 +5,9 @@
 
 
 
+	/// <summary>
+	/// Set of commonly used functions.
+	/// </summary>
 	public static class Utility
 	{
 
@@ -13,50 +16,66 @@
 		/// Finds nearest point on Biarc in 2d space.
 		/// </summary>
 		/// <param name="biarc">Target biarc</param>
-		/// <param name="mousePosition">mouse position</param>
+		/// <param name="transform">Transform for converting biarc points between world space and local space</param>
+		/// <param name="mousePosition">Mouse position</param>
 		/// <param name="distanceOnBiarc">[out] distance on biarc</param>
 		/// <param name="pointOnBiarc">[out] point on biarc</param>
 		/// <param name="vertices3d">Fixed array for storing vertices of biarc in local space</param>
 		/// <param name="vertices2d">Fixed array for storing vertices of biarc in 2d space</param>
-		public static void GetNearestPointOnBiarc (Biarc biarc, Vector2 mousePosition, out float distanceOnBiarc, out Vector3 pointOnBiarc, ref Vector3[] vertices3d, ref Vector2[] vertices2d)
+		public static void GetNearestPointOnBiarc (Biarc biarc, Transform transform, Vector2 mousePosition, out float distanceOnBiarc, out Vector3 pointOnBiarc, out float distanceOnBiarc2d, ref Vector3[] vertices3d, ref Vector2[] vertices2d)
 		{
-			float delta = biarc.totalLength / (float)(vertices3d.Length - 1);
+			// ...
 			float alpha = 0.0f;
+			float delta = biarc.totalLength / (float)(vertices3d.Length - 1);
 
+			// ...
 			for (int n = 0; n < vertices3d.Length; n++)
 			{
-				// Store point in vertices3d for later use
-				vertices3d[n] = biarc.GetPoint(alpha);
+				// Transform point to world space and store it in vertices3d for later use
+				vertices3d[n] = transform.TransformPoint(biarc.GetPoint(alpha));
 
 				// Transform it into 2d space
 				vertices2d[n] = HandleUtility.WorldToGUIPoint(vertices3d[n]);
+
+				// Advance
 				alpha += delta;
 			}
 
 			int index = 0;
-			float nearestDistance = float.MaxValue;
+			distanceOnBiarc2d = float.MaxValue;
 			Vector2 nearestPoint = Vector2.zero;
 
 			// Iterate over vertices as a set of lines. Line with a shortest
 			// distance to mouse position wins.
 			for (int n = 0; n < vertices2d.Length - 1; n++)
 			{
+				// Find closest point on line segment
 				Vector2 point = Utility.GetClosestPointOnFiniteLine2d(mousePosition, vertices2d[n], vertices2d[n + 1]);
+
+				// Measure distance to mouse position
 				float distance = Vector2.Distance(point, mousePosition);
-				if (distance < nearestDistance)
+
+				// ...
+				if (distance < distanceOnBiarc2d)
 				{
-					nearestDistance = distance;
+					distanceOnBiarc2d = distance;
 					nearestPoint = point;
 					index = n;
 				}
 			}
 
-			// Next, find closest point in vertices3d
+			// We already know index, we are required to find alpha,
+			// that will be used to find point in vertices3d.
 			float distanceToPoint = Vector2.Distance(vertices2d[index], nearestPoint);
 			float length = Vector2.Distance(vertices2d[index], vertices2d[index + 1]);
 			float t = distanceToPoint / length;
 
-			Vector3 closestPoint = Vector3.Lerp(vertices3d[index], vertices3d[index + 1], t);
+			// Interpolation between two points in local space
+			Vector3 closestPoint = Vector3.Lerp(
+				transform.InverseTransformPoint(vertices3d[index]),
+				transform.InverseTransformPoint(vertices3d[index + 1]),
+				t
+			);
 
 			// Last, since vertices3d is an approximation, find nearest point
 			biarc.GetNearestPoint(closestPoint, out pointOnBiarc, out distanceOnBiarc);
@@ -100,7 +119,7 @@
 		/// <param name="point">Point, to which algorithm should find closest point on line</param>
 		/// <param name="origin">Point, where line starts</param>
 		/// <param name="destination">Point, where line ends</param>
-		/// <returns><see cref="Vector3" /> Closets point on finite line to specified point</returns>
+		/// <returns><see cref="Vector3" /> Closest point on finite line to specified point</returns>
 		public static Vector3 GetClosestPointOnFiniteLine (Vector3 point, Vector3 origin, Vector3 destination)
 		{
 			// Source: https://stackoverflow.com/questions/51905268/how-to-find-closest-point-on-line
@@ -114,12 +133,25 @@
 		}
 
 		/// <summary>
+		/// Method for finding closest point on infinite line for specified point
+		/// </summary>
+		/// <param name="point">Point, to which algorithm should find closest point on line</param>
+		/// <param name="origin">Point, where line starts</param>
+		/// <param name="direction">Direction of the line</param>
+		/// <returns><see cref="Vector3" /> Closest point on infinite line to specified point</returns>
+		public static Vector3 GetClosestPointOnInfiniteLine (Vector3 point, Vector3 origin, Vector3 direction)
+		{
+			// Source: https://stackoverflow.com/questions/51905268/how-to-find-closest-point-on-line
+			return origin + Vector3.Project(point - origin, direction);
+		}
+
+		/// <summary>
 		/// 2D Method for finding closest point on line for specified point
 		/// </summary>
 		/// <param name="point">Point, to which algorithm should find closest point on line</param>
 		/// <param name="origin">Point, where line starts</param>
 		/// <param name="destination">Point, where line ends</param>
-		/// <returns><see cref="Vector2" /> Closets point on finite line to specified point</returns>
+		/// <returns><see cref="Vector2" /> Closest point on finite line to specified point</returns>
 		public static Vector2 GetClosestPointOnFiniteLine2d (Vector2 point, Vector2 origin, Vector2 destination)
 		{
 			// Source: https://stackoverflow.com/questions/51905268/how-to-find-closest-point-on-line
@@ -130,36 +162,6 @@
 
 			float distance = Mathf.Clamp(Vector2.Dot(point - origin, direction), 0f, length);
 			return origin + direction * distance;
-		}
-
-		/// <summary>
-		/// Method for determining if there is an intersection between ray and sphere.
-		/// </summary>
-		/// <param name="ray">Ray</param>
-		/// <param name="center">Center of sphere</param>
-		/// <param name="radius">Radius of sphere</param>
-		/// <returns>Returns true, if ray goes through sphere.</returns>
-		public static bool RaycastSphere (Ray ray, Vector3 center, float radius)
-		{
-			// Source: https://answers.unity.com/questions/1825578/check-if-raycast-intersects-a-sphere-given-the-sph.html
-			// Get the components of the vector coming from the point to the camera 
-			float x = center.x - ray.origin.x;
-			float y = center.y - ray.origin.y;
-			float z = center.z - ray.origin.z;
-
-			Vector3 dir = ray.direction;
-
-			float t = (x * dir.x + y * dir.y + z * dir.z) / (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-
-			float D1 = (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z) * (t * t);
-			float D2 = (x * dir.x + y * dir.y + z * dir.z) * 2 * t;
-			float D3 = (x * x + y * y + z * z);
-
-			// Solve quadratic formula
-			float D = D1 - D2 + D3;
-
-			// Check if the ray is within the radius
-			return (D < radius / 2.0f);
 		}
 
 		/// <summary>
@@ -178,38 +180,44 @@
 		}
 
 		/// <summary>
-		/// Applies rounding to provided Vector3 with defined grid size and origin
+		/// Applies rounding to provided Vector3 using Transform.
 		/// </summary>
-		/// <param name="position">Input <see cref="Vector3" /></param>
-		/// <param name="origin">Origin from which grid snapping should be applied</param>
-		/// <param name="gridSize">Size of grid</param>
+		/// <param name="position">Value to snap</param>
+		/// <param name="transform">Transform, that will be used for converting between world space and local space</param>
+		/// <param name="snapValue">The increment to snap to</param>
 		/// <returns><see cref="Vector3" /></returns>
-		public static Vector3 SnapVector (Vector3 position, Vector3 origin, float snapValue)
+		public static Vector3 SnapVector (Vector3 position, Transform transform, float snapValue)
 		{
-			return new Vector3(
-				origin.x + Mathf.Round((position.x - origin.x) / snapValue) * snapValue,
-				origin.y + Mathf.Round((position.y - origin.y) / snapValue) * snapValue,
-				origin.z + Mathf.Round((position.z - origin.z) / snapValue) * snapValue
+			position = transform.InverseTransformPoint(position);
+
+			position = new Vector3(
+				transform.localPosition.x + Mathf.Round((position.x - transform.localPosition.x) / snapValue) * snapValue,
+				transform.localPosition.y + Mathf.Round((position.y - transform.localPosition.y) / snapValue) * snapValue,
+				transform.localPosition.z + Mathf.Round((position.z - transform.localPosition.z) / snapValue) * snapValue
 			);
+
+			return transform.TransformPoint(position);
 		}
 
 		/// <summary>
-		/// Applies rounding to provided Vector3 using Transform as origin
+		/// Applies rounding to provided Vector3 using Transform and pivot.
 		/// </summary>
-		/// <param name="position"></param>
-		/// <param name="origin"></param>
-		/// <param name="snapValue"></param>
+		/// <param name="position">Value to snap</param>
+		/// <param name="transform">Transform, that will be used for converting between world space and local space</param>
+		/// <param name="pivot">Position, that will be used as origin, from which snapping will start.</param>
+		/// <param name="snapValue">The increment to snap to</param>
 		/// <returns><see cref="Vector3" /></returns>
-		public static Vector3 SnapVector (Vector3 position, Transform origin, float snapValue)
+		public static Vector3 SnapVector (Vector3 position, Transform transform, Vector3 pivot, float snapValue)
 		{
-			position = origin.InverseTransformPoint(position);
+			position = transform.InverseTransformPoint(position);
+
 			position = new Vector3(
-				origin.localPosition.x + Mathf.Round((position.x - origin.localPosition.x) / snapValue) * snapValue,
-				origin.localPosition.y + Mathf.Round((position.y - origin.localPosition.y) / snapValue) * snapValue,
-				origin.localPosition.z + Mathf.Round((position.z - origin.localPosition.z) / snapValue) * snapValue
+				transform.localPosition.x + pivot.x + Mathf.Round((position.x - transform.localPosition.x - pivot.x) / snapValue) * snapValue,
+				transform.localPosition.y + pivot.y + Mathf.Round((position.y - transform.localPosition.y - pivot.y) / snapValue) * snapValue,
+				transform.localPosition.z + pivot.z + Mathf.Round((position.z - transform.localPosition.z - pivot.z) / snapValue) * snapValue
 			);
 
-			return origin.TransformPoint(position);
+			return transform.TransformPoint(position);
 		}
 
 		/// <summary>
@@ -234,6 +242,25 @@
 			}
 		}
 
+		/// <summary>
+		/// Translates target quaternion to world space
+		/// </summary>
+		/// <param name="transform">Transform that will be used to translate to world space</param>
+		/// <param name="rotation">Target quaternion</param>
+		/// <returns>Quaternion, translated to world space</returns>
+		public static Quaternion TransformRotation (Transform transform, Quaternion rotation)
+		{
+			// ...
+			Vector3 forward = rotation * Vector3.forward;
+			Vector3 upwards = rotation * Vector3.up;
+
+			// ...
+			forward = transform.TransformDirection(forward);
+			upwards = transform.TransformDirection(upwards);
+
+			// ...
+			return Quaternion.LookRotation(forward, upwards);
+		}
 
 
 	}

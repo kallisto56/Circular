@@ -97,7 +97,7 @@
 			// - this.GetClosestPointOnArc(...)
 			this.plane = new Plane(this.origin, this.tangent, this.destination);
 
-			// Extents, circle center and it's radius
+			// Extents, circle center and its radius
 			{
 				// Find perpendiculars, that will be used to find center of circle
 				Vector3 leftPerpendicular = Vector3.Cross(this.tangent - this.origin, this.plane.normal).normalized;
@@ -114,7 +114,7 @@
 				this.leftExtent = Vector3.Lerp(this.tangent, this.origin, length / leftDistance);
 				this.rightExtent = Vector3.Lerp(this.tangent, this.destination, length / rightDistance);
 
-				// Perform intersection test, from each extent in direction perpendicular to it's side.
+				// Perform intersection test, from each extent in direction perpendicular to its side.
 				this.isValid = Utility.LineLineIntersection(
 					this.leftExtent, leftPerpendicular,
 					this.rightExtent, rightPerpendicular,

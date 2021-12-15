@@ -1,5 +1,6 @@
 ﻿namespace Circular
 {
+	using UnityEngine;
 
 
 
@@ -8,9 +9,9 @@
 	/// </summary>
 	public enum CotangentBehaviour
 	{
-		keepMagnitudeAdjustDirection,
-		exactCotangent,
-		manual
+		[InspectorNameAttribute("01. Keep magnitude, but adjust direction")] keepMagnitudeAdjustDirection,
+		[InspectorNameAttribute("02. Exact cotangent")] exactCotangent,
+		[InspectorNameAttribute("03. Manual")] manual
 	}
 
 

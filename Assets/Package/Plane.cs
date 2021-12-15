@@ -20,6 +20,12 @@
 			distance = -Vector3.Dot(normal, a);
 		}
 
+		public void Update (Vector3 a, Vector3 b, Vector3 c)
+		{
+			this.normal = Vector3.Normalize(Vector3.Cross(b - a, c - a));
+			this.distance = -Vector3.Dot(normal, a);
+		}
+
 		public bool Raycast(Ray ray, out float enter)
 		{
 			float vdot = Vector3.Dot(ray.direction, normal);

@@ -35,7 +35,7 @@
 			// this will do.
 			this.arc.Initialize(this.origin.position, this.tangent.position, this.destination.position);
 			
-			// Ensure array is initialized and it's length equals to specified
+			// Ensure array is initialized and its length equals to specified
 			// count of segments we will be drawing.
 			if (this.vertices == null || this.vertices.Length != this.countSegments)
 			{
